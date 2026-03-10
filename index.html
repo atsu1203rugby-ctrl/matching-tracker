@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>マッチング記録</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5f5f7;
+      color: #1c1c1e;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #fff;
+      border-bottom: 1px solid #e0e0e0;
+      padding: 16px 24px;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 1.3rem;
+      font-weight: 700;
+    }
+
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
+
+    .calendar-section {
+      background: #fff;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    .calendar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .calendar-header h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .calendar-nav {
+      background: none;
+      border: none;
+      font-size: 1.3rem;
+      cursor: pointer;
+      color: #007aff;
+      padding: 4px 10px;
+      border-radius: 8px;
+      transition: background 0.15s;
+    }
+
+    .calendar-nav:hover { background: #f0f0f0; }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      text-align: center;
+    }
+
+    .calendar-grid .day-label {
+      font-size: 0.75rem;
+      color: #888;
+      padding: 4px 0;
+      font-weight: 600;
+    }
+
+    .calendar-grid .day-label.sun { color: #ff3b30; }
+    .calendar-grid .day-label.sat { color: #007aff; }
+
+    .day-cell {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 0.15s;
+      position: relative;
+    }
+
+    .day-cell:hover { background: #f0f0f0; }
+    .day-cell.empty { cursor: default; }
+    .day-cell.today { font-weight: 700; color: #007aff; }
+
+    .day-cell.selected {
+      background: #007aff;
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .day-cell.has-data::after {
+      content: '';
+      position: absolute;
+      bottom: 3px;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #ff9500;
+    }
+
+    .day-cell.selected.has-data::after {
+      background: #fff;
+    }
+
+    .selected-date-label {
+      text-align: center;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 16px;
+    }
+
+    .counter-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 18px 20px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .counter-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .counter-emoji { font-size: 1.5rem; }
+
+    .counter-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    .counter-controls {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .counter-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: none;
+      font-size: 1.3rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.15s, transform 0.1s;
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .counter-btn:active { transform: scale(0.92); }
+
+    .btn-minus { background: #d1d1d6; color: #555; }
+    .btn-plus-likes  { background: #ff2d55; }
+    .btn-plus-matches { background: #ff9500; }
+    .btn-plus-good  { background: #af52de; }
+
+    .counter-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      min-width: 36px;
+      text-align: center;
+    }
+
+    .value-likes   { color: #ff2d55; }
+    .value-matches { color: #ff9500; }
+    .value-good    { color: #af52de; }
+
+    .total-section {
+      background: #fff;
+      border-radius: 16px;
+      padding: 18px 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      margin-top: 8px;
+    }
+
+    .total-section h3 {
+      font-size: 0.9rem;
+      color: #888;
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.95rem;
+      padding: 4px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .total-row:last-child { border-bottom: none; }
+    .total-row span:last-child { font-weight: 700; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>💘 マッチング記録</h1>
+</header>
+
+<div class="container">
+
+  <div class="calendar-section">
+    <div class="calendar-header">
+      <button class="calendar-nav" id="prevMonth">‹</button>
+      <h2 id="monthLabel"></h2>
+      <button class="calendar-nav" id="nextMonth">›</button>
+    </div>
+    <div class="calendar-grid" id="calendarGrid"></div>
+  </div>
+
+  <div class="selected-date-label" id="selectedDateLabel"></div>
+
+  <div class="counter-card">
+    <div class="counter-info">
+      <span class="counter-emoji">👍</span>
+      <span class="counter-title">いいね数</span>
+    </div>
+    <div class="counter-controls">
+      <button class="counter-btn btn-minus" onclick="change('likes', -1)">−</button>
+      <span class="counter-value value-likes" id="val-likes">0</span>
+      <button class="counter-btn btn-plus-likes" onclick="change('likes', 1)">＋</button>
+    </div>
+  </div>
+
+  <div class="counter-card">
+    <div class="counter-info">
+      <span class="counter-emoji">💞</span>
+      <span class="counter-title">マッチ数</span>
+    </div>
+    <div class="counter-controls">
+      <button class="counter-btn btn-minus" onclick="change('matches', -1)">−</button>
+      <span class="counter-value value-matches" id="val-matches">0</span>
+      <button class="counter-btn btn-plus-matches" onclick="change('matches', 1)">＋</button>
+    </div>
+  </div>
+
+  <div class="counter-card">
+    <div class="counter-info">
+      <span class="counter-emoji">⭐️</span>
+      <span class="counter-title">好みのマッチ数</span>
+    </div>
+    <div class="counter-controls">
+      <button class="counter-btn btn-minus" onclick="change('good', -1)">−</button>
+      <span class="counter-value value-good" id="val-good">0</span>
+      <button class="counter-btn btn-plus-good" onclick="change('good', 1)">＋</button>
+    </div>
+  </div>
+
+  <div class="total-section">
+    <h3>📊 今月の合計</h3>
+    <div class="total-row">
+      <span>👍 いいね数</span>
+      <span id="total-likes">0</span>
+    </div>
+    <div class="total-row">
+      <span>💞 マッチ数</span>
+      <span id="total-matches">0</span>
+    </div>
+    <div class="total-row">
+      <span>⭐️ 好みのマッチ数</span>
+      <span id="total-good">0</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const today = new Date();
+  let currentYear  = today.getFullYear();
+  let currentMonth = today.getMonth();
+  let selectedDate = formatKey(today);
+
+  function formatKey(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  function getRecord(key) {
+    const data = localStorage.getItem(key);
+    return data ? JSON.parse(data) : { likes: 0, matches: 0, good: 0 };
+  }
+
+  function saveRecord(key, record) {
+    localStorage.setItem(key, JSON.stringify(record));
+  }
+
+  function change(field, delta) {
+    const record = getRecord(selectedDate);
+    record[field] = Math.max(0, record[field] + delta);
+    saveRecord(selectedDate, record);
+    renderCounters();
+    renderCalendar();
+    renderTotals();
+  }
+
+  function renderCounters() {
+    const record = getRecord(selectedDate);
+    document.getElementById('val-likes').textContent   = record.likes;
+    document.getElementById('val-matches').textContent = record.matches;
+    document.getElementById('val-good').textContent    = record.good;
+  }
+
+  function renderDateLabel() {
+    const [y, m, d] = selectedDate.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+    const label = `${y}年${m}月${d}日（${weekdays[date.getDay()]}）`;
+    document.getElementById('selectedDateLabel').textContent = label;
+  }
+
+  function renderTotals() {
+    let likes = 0, matches = 0, good = 0;
+    const prefix = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(prefix)) {
+        const r = getRecord(key);
+        likes   += r.likes;
+        matches += r.matches;
+        good    += r.good;
+      }
+    }
+    document.getElementById('total-likes').textContent   = likes;
+    document.getElementById('total-matches').textContent = matches;
+    document.getElementById('total-good').textContent    = good;
+  }
+
+  function renderCalendar() {
+    const monthLabel = document.getElementById('monthLabel');
+    const grid = document.getElementById('calendarGrid');
+
+    monthLabel.textContent = `${currentYear}年${currentMonth + 1}月`;
+
+    grid.innerHTML = '';
+
+    const dayLabels = ['日','月','火','水','木','金','土'];
+    const labelClasses = ['sun','','','','','','sat'];
+    dayLabels.forEach((label, i) => {
+      const el = document.createElement('div');
+      el.className = `day-label ${labelClasses[i]}`;
+      el.textContent = label;
+      grid.appendChild(el);
+    });
+
+    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+    for (let i = 0; i < firstDay; i++) {
+      const empty = document.createElement('div');
+      empty.className = 'day-cell empty';
+      grid.appendChild(empty);
+    }
+
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const todayKey = formatKey(today);
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const key = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const cell = document.createElement('div');
+
+      let classes = 'day-cell';
+      if (key === todayKey)     classes += ' today';
+      if (key === selectedDate) classes += ' selected';
+
+      const record = getRecord(key);
+      if (record.likes > 0 || record.matches > 0 || record.good > 0) {
+        classes += ' has-data';
+      }
+
+      cell.className = classes;
+      cell.textContent = d;
+      cell.addEventListener('click', () => {
+        selectedDate = key;
+        renderCalendar();
+        renderCounters();
+        renderDateLabel();
+      });
+      grid.appendChild(cell);
+    }
+  }
+
+  document.getElementById('prevMonth').addEventListener('click', () => {
+    currentMonth--;
+    if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+    renderCalendar();
+    renderTotals();
+  });
+
+  document.getElementById('nextMonth').addEventListener('click', () => {
+    currentMonth++;
+    if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+    renderCalendar();
+    renderTotals();
+  });
+
+  renderCalendar();
+  renderCounters();
+  renderDateLabel();
+  renderTotals();
+</script>
+
+</body>
+</html>
