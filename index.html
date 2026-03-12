@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>マッチング記録</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -21,10 +22,7 @@
       text-align: center;
     }
 
-    header h1 {
-      font-size: 1.3rem;
-      font-weight: 700;
-    }
+    header h1 { font-size: 1.3rem; font-weight: 700; }
 
     .container {
       max-width: 480px;
@@ -32,6 +30,38 @@
       padding: 24px 16px;
     }
 
+    /* タブ */
+    .tabs {
+      display: flex;
+      background: #e5e5ea;
+      border-radius: 12px;
+      padding: 3px;
+      margin-bottom: 20px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      border: none;
+      background: none;
+      padding: 8px 4px;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: #888;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      background: #fff;
+      color: #1c1c1e;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* カレンダー */
     .calendar-section {
       background: #fff;
       border-radius: 16px;
@@ -47,10 +77,7 @@
       margin-bottom: 16px;
     }
 
-    .calendar-header h2 {
-      font-size: 1.1rem;
-      font-weight: 600;
-    }
+    .calendar-header h2 { font-size: 1.1rem; font-weight: 600; }
 
     .calendar-nav {
       background: none;
@@ -60,10 +87,7 @@
       color: #007aff;
       padding: 4px 10px;
       border-radius: 8px;
-      transition: background 0.15s;
     }
-
-    .calendar-nav:hover { background: #f0f0f0; }
 
     .calendar-grid {
       display: grid;
@@ -72,15 +96,15 @@
       text-align: center;
     }
 
-    .calendar-grid .day-label {
+    .day-label {
       font-size: 0.75rem;
       color: #888;
       padding: 4px 0;
       font-weight: 600;
     }
 
-    .calendar-grid .day-label.sun { color: #ff3b30; }
-    .calendar-grid .day-label.sat { color: #007aff; }
+    .day-label.sun { color: #ff3b30; }
+    .day-label.sat { color: #007aff; }
 
     .day-cell {
       aspect-ratio: 1;
@@ -88,36 +112,56 @@
       align-items: center;
       justify-content: center;
       border-radius: 50%;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       cursor: pointer;
-      transition: background 0.15s;
       position: relative;
+      transition: background 0.15s;
     }
 
     .day-cell:hover { background: #f0f0f0; }
     .day-cell.empty { cursor: default; }
     .day-cell.today { font-weight: 700; color: #007aff; }
-
-    .day-cell.selected {
-      background: #007aff;
-      color: #fff;
-      font-weight: 700;
-    }
+    .day-cell.selected { background: #007aff; color: #fff; font-weight: 700; }
 
     .day-cell.has-data::after {
       content: '';
       position: absolute;
-      bottom: 3px;
+      bottom: 2px;
       width: 4px;
       height: 4px;
       border-radius: 50%;
       background: #ff9500;
     }
 
-    .day-cell.selected.has-data::after {
-      background: #fff;
+    .day-cell.selected.has-data::after { background: #fff; }
+
+    /* 需要予測バナー */
+    .demand-banner {
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
     }
 
+    .demand-banner.high { background: linear-gradient(135deg, #ff6b6b22, #ff9f4322); border: 1.5px solid #ff6b6b66; }
+    .demand-banner.mid  { background: linear-gradient(135deg, #ffd93d22, #6bcb7722); border: 1.5px solid #ffd93d66; }
+    .demand-banner.low  { background: linear-gradient(135deg, #74b9ff22, #a29bfe22); border: 1.5px solid #74b9ff66; }
+
+    .demand-icon { font-size: 1.6rem; }
+
+    .demand-text { flex: 1; }
+    .demand-title { font-size: 0.85rem; font-weight: 700; margin-bottom: 2px; }
+    .demand-desc  { font-size: 0.78rem; color: #555; line-height: 1.4; }
+    .demand-recommend {
+      font-size: 0.82rem;
+      font-weight: 700;
+      margin-top: 6px;
+      color: #ff2d55;
+    }
+
+    /* 選択日ラベル */
     .selected-date-label {
       text-align: center;
       font-size: 1rem;
@@ -126,62 +170,53 @@
       margin-bottom: 16px;
     }
 
+    /* カウンターカード */
     .counter-card {
       background: #fff;
       border-radius: 16px;
-      padding: 18px 20px;
+      padding: 16px 18px;
       margin-bottom: 14px;
       box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    .counter-top {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      margin-bottom: 10px;
     }
 
-    .counter-info {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+    .counter-info { display: flex; align-items: center; gap: 8px; }
+    .counter-emoji { font-size: 1.4rem; }
+    .counter-title { font-size: 0.95rem; font-weight: 600; }
 
-    .counter-emoji { font-size: 1.5rem; }
-
-    .counter-title {
-      font-size: 0.95rem;
-      font-weight: 600;
-    }
-
-    .counter-controls {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
+    .counter-controls { display: flex; align-items: center; gap: 12px; }
 
     .counter-btn {
-      width: 36px;
-      height: 36px;
+      width: 34px;
+      height: 34px;
       border-radius: 50%;
       border: none;
-      font-size: 1.3rem;
+      font-size: 1.2rem;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: opacity 0.15s, transform 0.1s;
       color: #fff;
       font-weight: 700;
+      transition: transform 0.1s;
     }
 
     .counter-btn:active { transform: scale(0.92); }
-
     .btn-minus { background: #d1d1d6; color: #555; }
-    .btn-plus-likes  { background: #ff2d55; }
+    .btn-plus-likes   { background: #ff2d55; }
     .btn-plus-matches { background: #ff9500; }
-    .btn-plus-good  { background: #af52de; }
+    .btn-plus-good    { background: #af52de; }
 
     .counter-value {
       font-size: 1.5rem;
       font-weight: 700;
-      min-width: 36px;
+      min-width: 34px;
       text-align: center;
     }
 
@@ -189,6 +224,46 @@
     .value-matches { color: #ff9500; }
     .value-good    { color: #af52de; }
 
+    /* 直接入力 */
+    .direct-input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-top: 1px solid #f0f0f0;
+      padding-top: 10px;
+    }
+
+    .direct-input-row label {
+      font-size: 0.78rem;
+      color: #888;
+      white-space: nowrap;
+    }
+
+    .direct-input {
+      flex: 1;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 0.9rem;
+      text-align: center;
+      outline: none;
+      transition: border 0.2s;
+    }
+
+    .direct-input:focus { border-color: #007aff; }
+
+    .set-btn {
+      background: #007aff;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 7px 14px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* 月間合計 */
     .total-section {
       background: #fff;
       border-radius: 16px;
@@ -197,23 +272,71 @@
       margin-top: 8px;
     }
 
-    .total-section h3 {
-      font-size: 0.9rem;
-      color: #888;
-      margin-bottom: 12px;
-      font-weight: 600;
-    }
+    .total-section h3 { font-size: 0.9rem; color: #888; margin-bottom: 12px; font-weight: 600; }
 
     .total-row {
       display: flex;
       justify-content: space-between;
       font-size: 0.95rem;
-      padding: 4px 0;
+      padding: 5px 0;
       border-bottom: 1px solid #f0f0f0;
     }
 
     .total-row:last-child { border-bottom: none; }
     .total-row span:last-child { font-weight: 700; }
+
+    /* グラフ */
+    .graph-section {
+      background: #fff;
+      border-radius: 16px;
+      padding: 18px 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    .graph-section h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 14px; color: #333; }
+
+    .graph-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .graph-nav h3 { font-size: 0.95rem; font-weight: 700; color: #333; }
+
+    .graph-nav-btn {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      color: #007aff;
+      cursor: pointer;
+      padding: 4px 10px;
+    }
+
+    .chart-container { position: relative; height: 220px; }
+
+    /* チェックボックス凡例 */
+    .legend-checks {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .legend-check {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
   </style>
 </head>
 <body>
@@ -224,204 +347,419 @@
 
 <div class="container">
 
-  <div class="calendar-section">
-    <div class="calendar-header">
-      <button class="calendar-nav" id="prevMonth">‹</button>
-      <h2 id="monthLabel"></h2>
-      <button class="calendar-nav" id="nextMonth">›</button>
-    </div>
-    <div class="calendar-grid" id="calendarGrid"></div>
+  <!-- タブ -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('record')">📝 記録</button>
+    <button class="tab-btn" onclick="switchTab('graph')">📈 グラフ</button>
+    <button class="tab-btn" onclick="switchTab('forecast')">🔮 需要予測</button>
   </div>
 
-  <div class="selected-date-label" id="selectedDateLabel"></div>
+  <!-- ── 記録タブ ── -->
+  <div id="tab-record" class="tab-content active">
 
-  <div class="counter-card">
-    <div class="counter-info">
-      <span class="counter-emoji">👍</span>
-      <span class="counter-title">いいね数</span>
+    <!-- 需要予測バナー -->
+    <div id="demandBanner" class="demand-banner"></div>
+
+    <!-- カレンダー -->
+    <div class="calendar-section">
+      <div class="calendar-header">
+        <button class="calendar-nav" id="prevMonth">‹</button>
+        <h2 id="monthLabel"></h2>
+        <button class="calendar-nav" id="nextMonth">›</button>
+      </div>
+      <div class="calendar-grid" id="calendarGrid"></div>
     </div>
-    <div class="counter-controls">
-      <button class="counter-btn btn-minus" onclick="change('likes', -1)">−</button>
-      <span class="counter-value value-likes" id="val-likes">0</span>
-      <button class="counter-btn btn-plus-likes" onclick="change('likes', 1)">＋</button>
+
+    <!-- 選択日ラベル -->
+    <div class="selected-date-label" id="selectedDateLabel"></div>
+
+    <!-- いいね数 -->
+    <div class="counter-card">
+      <div class="counter-top">
+        <div class="counter-info">
+          <span class="counter-emoji">👍</span>
+          <span class="counter-title">いいね数</span>
+        </div>
+        <div class="counter-controls">
+          <button class="counter-btn btn-minus" onclick="change('likes', -1)">−</button>
+          <span class="counter-value value-likes" id="val-likes">0</span>
+          <button class="counter-btn btn-plus-likes" onclick="change('likes', 1)">＋</button>
+        </div>
+      </div>
+      <div class="direct-input-row">
+        <label>直接入力</label>
+        <input class="direct-input" type="number" id="input-likes" min="0" placeholder="例: 10"/>
+        <button class="set-btn" onclick="setDirect('likes')">セット</button>
+      </div>
+    </div>
+
+    <!-- マッチ数 -->
+    <div class="counter-card">
+      <div class="counter-top">
+        <div class="counter-info">
+          <span class="counter-emoji">💞</span>
+          <span class="counter-title">マッチ数</span>
+        </div>
+        <div class="counter-controls">
+          <button class="counter-btn btn-minus" onclick="change('matches', -1)">−</button>
+          <span class="counter-value value-matches" id="val-matches">0</span>
+          <button class="counter-btn btn-plus-matches" onclick="change('matches', 1)">＋</button>
+        </div>
+      </div>
+      <div class="direct-input-row">
+        <label>直接入力</label>
+        <input class="direct-input" type="number" id="input-matches" min="0" placeholder="例: 3"/>
+        <button class="set-btn" onclick="setDirect('matches')">セット</button>
+      </div>
+    </div>
+
+    <!-- 好みのマッチ数 -->
+    <div class="counter-card">
+      <div class="counter-top">
+        <div class="counter-info">
+          <span class="counter-emoji">⭐️</span>
+          <span class="counter-title">好みのマッチ数</span>
+        </div>
+        <div class="counter-controls">
+          <button class="counter-btn btn-minus" onclick="change('good', -1)">−</button>
+          <span class="counter-value value-good" id="val-good">0</span>
+          <button class="counter-btn btn-plus-good" onclick="change('good', 1)">＋</button>
+        </div>
+      </div>
+      <div class="direct-input-row">
+        <label>直接入力</label>
+        <input class="direct-input" type="number" id="input-good" min="0" placeholder="例: 1"/>
+        <button class="set-btn" onclick="setDirect('good')">セット</button>
+      </div>
+    </div>
+
+    <!-- 月間合計 -->
+    <div class="total-section">
+      <h3>📊 今月の合計</h3>
+      <div class="total-row"><span>👍 いいね数</span><span id="total-likes">0</span></div>
+      <div class="total-row"><span>💞 マッチ数</span><span id="total-matches">0</span></div>
+      <div class="total-row"><span>⭐️ 好みのマッチ数</span><span id="total-good">0</span></div>
+    </div>
+
+  </div>
+
+  <!-- ── グラフタブ ── -->
+  <div id="tab-graph" class="tab-content">
+    <div class="graph-section">
+      <div class="graph-nav">
+        <button class="graph-nav-btn" id="graphPrev">‹</button>
+        <h3 id="graphMonthLabel"></h3>
+        <button class="graph-nav-btn" id="graphNext">›</button>
+      </div>
+      <div class="legend-checks">
+        <label class="legend-check">
+          <input type="checkbox" id="chk-likes" checked onchange="renderGraph()">
+          <span class="legend-dot" style="background:#ff2d55"></span>👍 いいね
+        </label>
+        <label class="legend-check">
+          <input type="checkbox" id="chk-matches" checked onchange="renderGraph()">
+          <span class="legend-dot" style="background:#ff9500"></span>💞 マッチ
+        </label>
+        <label class="legend-check">
+          <input type="checkbox" id="chk-good" checked onchange="renderGraph()">
+          <span class="legend-dot" style="background:#af52de"></span>⭐️ 好みマッチ
+        </label>
+      </div>
+      <div class="chart-container">
+        <canvas id="myChart"></canvas>
+      </div>
     </div>
   </div>
 
-  <div class="counter-card">
-    <div class="counter-info">
-      <span class="counter-emoji">💞</span>
-      <span class="counter-title">マッチ数</span>
-    </div>
-    <div class="counter-controls">
-      <button class="counter-btn btn-minus" onclick="change('matches', -1)">−</button>
-      <span class="counter-value value-matches" id="val-matches">0</span>
-      <button class="counter-btn btn-plus-matches" onclick="change('matches', 1)">＋</button>
-    </div>
-  </div>
-
-  <div class="counter-card">
-    <div class="counter-info">
-      <span class="counter-emoji">⭐️</span>
-      <span class="counter-title">好みのマッチ数</span>
-    </div>
-    <div class="counter-controls">
-      <button class="counter-btn btn-minus" onclick="change('good', -1)">−</button>
-      <span class="counter-value value-good" id="val-good">0</span>
-      <button class="counter-btn btn-plus-good" onclick="change('good', 1)">＋</button>
-    </div>
-  </div>
-
-  <div class="total-section">
-    <h3>📊 今月の合計</h3>
-    <div class="total-row">
-      <span>👍 いいね数</span>
-      <span id="total-likes">0</span>
-    </div>
-    <div class="total-row">
-      <span>💞 マッチ数</span>
-      <span id="total-matches">0</span>
-    </div>
-    <div class="total-row">
-      <span>⭐️ 好みのマッチ数</span>
-      <span id="total-good">0</span>
-    </div>
+  <!-- ── 需要予測タブ ── -->
+  <div id="tab-forecast" class="tab-content">
+    <div id="forecastList"></div>
   </div>
 
 </div>
 
 <script>
-  const today = new Date();
-  let currentYear  = today.getFullYear();
-  let currentMonth = today.getMonth();
-  let selectedDate = formatKey(today);
+// ── イベントデータ ──
+const LOVE_EVENTS = [
+  { month: 1,  day: 1,  name: "元旦",           level: "mid",  icon: "🎍", desc: "新年で出会いを求める人が増加！",           recommend: 15 },
+  { month: 2,  day: 14, name: "バレンタインデー", level: "high", icon: "🍫", desc: "年間最大のマッチング需要！積極的にいいねを！", recommend: 30 },
+  { month: 3,  day: 14, name: "ホワイトデー",    level: "high", icon: "🍬", desc: "マッチング需要が高い時期！",                recommend: 25 },
+  { month: 3,  day: 20, name: "春分・出会いの季節", level: "mid", icon: "🌸", desc: "春の出会いシーズン到来！",                recommend: 20 },
+  { month: 4,  day: 1,  name: "新生活シーズン",  level: "high", icon: "🌷", desc: "進学・就職で出会いを求める人が急増！",       recommend: 28 },
+  { month: 5,  day: 3,  name: "GW",             level: "mid",  icon: "🎏", desc: "連休中はマッチング需要がアップ！",          recommend: 18 },
+  { month: 7,  day: 7,  name: "七夕",           level: "mid",  icon: "🎋", desc: "ロマンチックな雰囲気でマッチ率UP！",        recommend: 18 },
+  { month: 8,  day: 11, name: "お盆・夏休み",   level: "mid",  icon: "🏖️", desc: "夏の出会いを求める人が増加！",             recommend: 20 },
+  { month: 10, day: 31, name: "ハロウィン",      level: "mid",  icon: "🎃", desc: "イベント気分でマッチング需要UP！",          recommend: 18 },
+  { month: 11, day: 11, name: "ポッキーの日",    level: "mid",  icon: "🍫", desc: "カップル意識が高まる日！",                 recommend: 16 },
+  { month: 12, day: 24, name: "クリスマスイブ",  level: "high", icon: "🎄", desc: "孤独感から需要が急上昇！今すぐいいねを！",   recommend: 35 },
+  { month: 12, day: 25, name: "クリスマス",      level: "high", icon: "🎅", desc: "年間2位の需要！積極的に動こう！",           recommend: 32 },
+  { month: 12, day: 31, name: "大晦日",          level: "mid",  icon: "🎆", desc: "来年こそ恋人！という人が急増！",            recommend: 20 },
+];
 
-  function formatKey(date) {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
+// ── 状態 ──
+const today = new Date();
+let currentYear  = today.getFullYear();
+let currentMonth = today.getMonth();
+let selectedDate = formatKey(today);
+let graphYear    = today.getFullYear();
+let graphMonth   = today.getMonth();
+let myChart      = null;
+
+function formatKey(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function getRecord(key) {
+  const data = localStorage.getItem(key);
+  return data ? JSON.parse(data) : { likes: 0, matches: 0, good: 0 };
+}
+
+function saveRecord(key, record) {
+  localStorage.setItem(key, JSON.stringify(record));
+}
+
+// ── カウント操作 ──
+function change(field, delta) {
+  const record = getRecord(selectedDate);
+  record[field] = Math.max(0, record[field] + delta);
+  saveRecord(selectedDate, record);
+  renderAll();
+}
+
+// ── 直接入力 ──
+function setDirect(field) {
+  const input = document.getElementById(`input-${field}`);
+  const val = parseInt(input.value);
+  if (isNaN(val) || val < 0) { alert('0以上の数値を入力してください'); return; }
+  const record = getRecord(selectedDate);
+  record[field] = val;
+  saveRecord(selectedDate, record);
+  input.value = '';
+  renderAll();
+}
+
+// ── タブ切り替え ──
+function switchTab(name) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById(`tab-${name}`).classList.add('active');
+  event.target.classList.add('active');
+  if (name === 'graph') renderGraph();
+  if (name === 'forecast') renderForecast();
+}
+
+// ── 需要予測バナー（記録タブ用） ──
+function renderDemandBanner() {
+  const banner = document.getElementById('demandBanner');
+  const [y, m, d] = selectedDate.split('-').map(Number);
+
+  // 近い7日以内のイベントを探す
+  let nearest = null;
+  let minDiff = Infinity;
+
+  LOVE_EVENTS.forEach(ev => {
+    const evDate = new Date(y, ev.month - 1, ev.day);
+    const selDate = new Date(y, m - 1, d);
+    const diff = Math.ceil((evDate - selDate) / (1000 * 60 * 60 * 24));
+    if (diff >= 0 && diff <= 7 && diff < minDiff) {
+      minDiff = diff;
+      nearest = { ...ev, diff };
+    }
+  });
+
+  if (!nearest) {
+    banner.innerHTML = '';
+    banner.className = 'demand-banner';
+    banner.style.display = 'none';
+    return;
   }
 
-  function getRecord(key) {
-    const data = localStorage.getItem(key);
-    return data ? JSON.parse(data) : { likes: 0, matches: 0, good: 0 };
+  banner.style.display = 'flex';
+  banner.className = `demand-banner ${nearest.level}`;
+  const diffText = nearest.diff === 0 ? '今日！' : `あと${nearest.diff}日`;
+  banner.innerHTML = `
+    <div class="demand-icon">${nearest.icon}</div>
+    <div class="demand-text">
+      <div class="demand-title">${nearest.name}（${diffText}）</div>
+      <div class="demand-desc">${nearest.desc}</div>
+      <div class="demand-recommend">📌 推奨いいね数：1日${nearest.recommend}件以上</div>
+    </div>
+  `;
+}
+
+// ── 需要予測タブ ──
+function renderForecast() {
+  const list = document.getElementById('forecastList');
+  const y = new Date().getFullYear();
+
+  list.innerHTML = LOVE_EVENTS.map(ev => {
+    const evDate = new Date(y, ev.month - 1, ev.day);
+    const now = new Date();
+    const diff = Math.ceil((evDate - now) / (1000 * 60 * 60 * 24));
+    const diffText = diff < 0 ? `${Math.abs(diff)}日前` : diff === 0 ? '今日！' : `あと${diff}日`;
+    const isPast = diff < 0;
+
+    return `
+      <div class="demand-banner ${isPast ? 'low' : ev.level}" style="margin-bottom:12px; opacity:${isPast ? 0.5 : 1}">
+        <div class="demand-icon">${ev.icon}</div>
+        <div class="demand-text">
+          <div class="demand-title">${ev.name}　<span style="font-weight:400;color:#888;font-size:0.8rem">${ev.month}/${ev.day}（${diffText}）</span></div>
+          <div class="demand-desc">${ev.desc}</div>
+          <div class="demand-recommend">📌 推奨いいね数：1日${ev.recommend}件以上</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ── グラフ ──
+function renderGraph() {
+  const daysInMonth = new Date(graphYear, graphMonth + 1, 0).getDate();
+  const labels = [];
+  const likesData = [], matchesData = [], goodData = [];
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const key = `${graphYear}-${String(graphMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const rec = getRecord(key);
+    labels.push(`${d}日`);
+    likesData.push(rec.likes);
+    matchesData.push(rec.matches);
+    goodData.push(rec.good);
   }
 
-  function saveRecord(key, record) {
-    localStorage.setItem(key, JSON.stringify(record));
-  }
+  document.getElementById('graphMonthLabel').textContent = `${graphYear}年${graphMonth + 1}月`;
 
-  function change(field, delta) {
-    const record = getRecord(selectedDate);
-    record[field] = Math.max(0, record[field] + delta);
-    saveRecord(selectedDate, record);
-    renderCounters();
-    renderCalendar();
-    renderTotals();
-  }
+  const showLikes   = document.getElementById('chk-likes').checked;
+  const showMatches = document.getElementById('chk-matches').checked;
+  const showGood    = document.getElementById('chk-good').checked;
 
-  function renderCounters() {
-    const record = getRecord(selectedDate);
-    document.getElementById('val-likes').textContent   = record.likes;
-    document.getElementById('val-matches').textContent = record.matches;
-    document.getElementById('val-good').textContent    = record.good;
-  }
+  const datasets = [];
+  if (showLikes)   datasets.push({ label: '👍 いいね',    data: likesData,   borderColor: '#ff2d55', backgroundColor: '#ff2d5522', tension: 0.3, fill: true, pointRadius: 3 });
+  if (showMatches) datasets.push({ label: '💞 マッチ',    data: matchesData, borderColor: '#ff9500', backgroundColor: '#ff950022', tension: 0.3, fill: true, pointRadius: 3 });
+  if (showGood)    datasets.push({ label: '⭐️ 好みマッチ', data: goodData,    borderColor: '#af52de', backgroundColor: '#af52de22', tension: 0.3, fill: true, pointRadius: 3 });
 
-  function renderDateLabel() {
-    const [y, m, d] = selectedDate.split('-').map(Number);
-    const date = new Date(y, m - 1, d);
-    const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
-    const label = `${y}年${m}月${d}日（${weekdays[date.getDay()]}）`;
-    document.getElementById('selectedDateLabel').textContent = label;
-  }
+  if (myChart) myChart.destroy();
 
-  function renderTotals() {
-    let likes = 0, matches = 0, good = 0;
-    const prefix = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith(prefix)) {
-        const r = getRecord(key);
-        likes   += r.likes;
-        matches += r.matches;
-        good    += r.good;
+  const ctx = document.getElementById('myChart').getContext('2d');
+  myChart = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 10 } },
+        y: { beginAtZero: true, ticks: { font: { size: 10 }, stepSize: 1 } }
       }
     }
-    document.getElementById('total-likes').textContent   = likes;
-    document.getElementById('total-matches').textContent = matches;
-    document.getElementById('total-good').textContent    = good;
+  });
+}
+
+// ── カレンダー ──
+function renderCalendar() {
+  document.getElementById('monthLabel').textContent = `${currentYear}年${currentMonth + 1}月`;
+  const grid = document.getElementById('calendarGrid');
+  grid.innerHTML = '';
+
+  ['日','月','火','水','木','金','土'].forEach((label, i) => {
+    const el = document.createElement('div');
+    el.className = `day-label ${ i === 0 ? 'sun' : i === 6 ? 'sat' : '' }`;
+    el.textContent = label;
+    grid.appendChild(el);
+  });
+
+  const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+  for (let i = 0; i < firstDay; i++) {
+    const empty = document.createElement('div');
+    empty.className = 'day-cell empty';
+    grid.appendChild(empty);
   }
 
-  function renderCalendar() {
-    const monthLabel = document.getElementById('monthLabel');
-    const grid = document.getElementById('calendarGrid');
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const todayKey = formatKey(today);
 
-    monthLabel.textContent = `${currentYear}年${currentMonth + 1}月`;
-
-    grid.innerHTML = '';
-
-    const dayLabels = ['日','月','火','水','木','金','土'];
-    const labelClasses = ['sun','','','','','','sat'];
-    dayLabels.forEach((label, i) => {
-      const el = document.createElement('div');
-      el.className = `day-label ${labelClasses[i]}`;
-      el.textContent = label;
-      grid.appendChild(el);
+  for (let d = 1; d <= daysInMonth; d++) {
+    const key = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const cell = document.createElement('div');
+    let classes = 'day-cell';
+    if (key === todayKey)     classes += ' today';
+    if (key === selectedDate) classes += ' selected';
+    const rec = getRecord(key);
+    if (rec.likes > 0 || rec.matches > 0 || rec.good > 0) classes += ' has-data';
+    cell.className = classes;
+    cell.textContent = d;
+    cell.addEventListener('click', () => {
+      selectedDate = key;
+      renderAll();
     });
+    grid.appendChild(cell);
+  }
+}
 
-    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
-    for (let i = 0; i < firstDay; i++) {
-      const empty = document.createElement('div');
-      empty.className = 'day-cell empty';
-      grid.appendChild(empty);
-    }
+// ── カウンター表示 ──
+function renderCounters() {
+  const rec = getRecord(selectedDate);
+  document.getElementById('val-likes').textContent   = rec.likes;
+  document.getElementById('val-matches').textContent = rec.matches;
+  document.getElementById('val-good').textContent    = rec.good;
+}
 
-    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-    const todayKey = formatKey(today);
+// ── 日付ラベル ──
+function renderDateLabel() {
+  const [y, m, d] = selectedDate.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  const weekdays = ['日','月','火','水','木','金','土'];
+  document.getElementById('selectedDateLabel').textContent = `${y}年${m}月${d}日（${weekdays[date.getDay()]}）`;
+}
 
-    for (let d = 1; d <= daysInMonth; d++) {
-      const key = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      const cell = document.createElement('div');
-
-      let classes = 'day-cell';
-      if (key === todayKey)     classes += ' today';
-      if (key === selectedDate) classes += ' selected';
-
-      const record = getRecord(key);
-      if (record.likes > 0 || record.matches > 0 || record.good > 0) {
-        classes += ' has-data';
-      }
-
-      cell.className = classes;
-      cell.textContent = d;
-      cell.addEventListener('click', () => {
-        selectedDate = key;
-        renderCalendar();
-        renderCounters();
-        renderDateLabel();
-      });
-      grid.appendChild(cell);
+// ── 月間合計 ──
+function renderTotals() {
+  let likes = 0, matches = 0, good = 0;
+  const prefix = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith(prefix)) {
+      const r = getRecord(key);
+      likes += r.likes; matches += r.matches; good += r.good;
     }
   }
+  document.getElementById('total-likes').textContent   = likes;
+  document.getElementById('total-matches').textContent = matches;
+  document.getElementById('total-good').textContent    = good;
+}
 
-  document.getElementById('prevMonth').addEventListener('click', () => {
-    currentMonth--;
-    if (currentMonth < 0) { currentMonth = 11; currentYear--; }
-    renderCalendar();
-    renderTotals();
-  });
-
-  document.getElementById('nextMonth').addEventListener('click', () => {
-    currentMonth++;
-    if (currentMonth > 11) { currentMonth = 0; currentYear++; }
-    renderCalendar();
-    renderTotals();
-  });
-
+function renderAll() {
   renderCalendar();
   renderCounters();
   renderDateLabel();
   renderTotals();
+  renderDemandBanner();
+}
+
+// ── 月移動 ──
+document.getElementById('prevMonth').addEventListener('click', () => {
+  currentMonth--; if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+  renderAll();
+});
+document.getElementById('nextMonth').addEventListener('click', () => {
+  currentMonth++; if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+  renderAll();
+});
+document.getElementById('graphPrev').addEventListener('click', () => {
+  graphMonth--; if (graphMonth < 0) { graphMonth = 11; graphYear--; }
+  renderGraph();
+});
+document.getElementById('graphNext').addEventListener('click', () => {
+  graphMonth++; if (graphMonth > 11) { graphMonth = 0; graphYear++; }
+  renderGraph();
+});
+
+// ── 初期描画 ──
+renderAll();
 </script>
 
 </body>
